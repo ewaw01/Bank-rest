@@ -1,5 +1,6 @@
-package com.example.bank_rest.security;
+package com.example.bank_rest.config;
 
+import com.example.bank_rest.security.JwtAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
