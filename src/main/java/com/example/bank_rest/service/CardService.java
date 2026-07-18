@@ -101,6 +101,20 @@ public class CardService {
     }
 
     @Transactional
+    public void activateCard(Long id) {
+        CardEntity card = cardRepository.findById(id).orElseThrow(
+                () -> new NoSuchElementException("Card with id " + id + " not found")
+        );
+
+        if (card.getStatus() != CardStatus.BLOCKED) {
+            throw new IllegalStateException("Only blocked cards can be activated");
+        }
+
+        card.setStatus(CardStatus.ACTIVE);
+        cardRepository.save(card);
+    }
+
+    @Transactional
     public void transferBetweenCards(TransferRequestDto request, UserDetails currentUser) {
         log.info("called method transferBetweenCards");
 
@@ -123,9 +137,11 @@ public class CardService {
         }
 
         if (fromCard.getExpiryDate().isBefore(LocalDate.now())) {
+            fromCard.setStatus(CardStatus.EXPIRED);
             throw new IllegalStateException("From card has expired");
         }
         if (toCard.getExpiryDate().isBefore(LocalDate.now())) {
+            toCard.setStatus(CardStatus.EXPIRED);
             throw new IllegalStateException("To card has expired");
         }
 
@@ -140,6 +156,8 @@ public class CardService {
 
         fromCard.setBalance(fromCard.getBalance() - amount);
         toCard.setBalance(toCard.getBalance() + amount);
+
+        log.info("Transfer {} from card {} to card {}", amount, fromCard.getId(), toCard.getId());
 
         cardRepository.save(fromCard);
         cardRepository.save(toCard);

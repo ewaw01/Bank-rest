@@ -150,4 +150,16 @@ public class UserService {
         var pageable = PageRequest.of(pageNum, pageSize);
         return pageable;
     }
+
+    @Transactional
+    public void blockUser(Long id) {
+        log.info("called method blockUser");
+
+        UserEntity user = userRepository.findById(id).orElseThrow(
+                () -> new NoSuchElementException("User with id " + id + " not found")
+        );
+
+        user.setIsBlocked(true);
+        userRepository.save(user);
+    }
 }

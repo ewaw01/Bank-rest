@@ -1,7 +1,6 @@
 package com.example.bank_rest.controller;
 
 import com.example.bank_rest.dto.*;
-import com.example.bank_rest.entity.CardStatus;
 import com.example.bank_rest.service.CardService;
 import com.example.bank_rest.service.UserService;
 import jakarta.validation.Valid;
@@ -14,7 +13,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Date;
 import java.util.List;
 
 @RestController
@@ -107,6 +105,16 @@ public class MainController {
         return ResponseEntity.ok().body("Card with id " + id + " was blocked.");
     }
 
+    @PutMapping("/admin/card/{id}/activate")
+    public ResponseEntity<String> activateCard(
+            @PathVariable Long id
+    ) {
+        log.info("called method activateCard");
+
+        cardService.activateCard(id);
+        return ResponseEntity.ok().body("Card with id " + id + " was activated.");
+    }
+
     @GetMapping("/user/card")
     public ResponseEntity<List<Card>> getUserCards(
             @RequestParam(name = "user_id", required = false) Long userId,
@@ -139,6 +147,16 @@ public class MainController {
 
         cardService.transferBetweenCards(request, currentUser);
         return ResponseEntity.ok().body("Transfer completed successfully");
+    }
+
+    @PutMapping("/admin/user/{id}/block")
+    public ResponseEntity<String> blockUser(
+            @PathVariable Long id
+    ) {
+        log.info("called method blockUser");
+
+        userService.blockUser(id);
+        return ResponseEntity.ok().body("User with id " + id + " was blocked.");
     }
 
 }

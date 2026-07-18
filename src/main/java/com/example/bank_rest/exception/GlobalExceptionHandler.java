@@ -26,7 +26,11 @@ public class GlobalExceptionHandler {
         );
     }
 
-    @ExceptionHandler(IllegalStateException.class)
+    @ExceptionHandler(exception = {
+            IllegalStateException.class,
+            BlockedUserException.class,
+            UserAlreadyExistException.class,
+    })
     public ResponseEntity<ErrorResponseDto> handleIllegalState(IllegalStateException e) {
         log.error("IllegalStateException: {}", e.getMessage());
 
