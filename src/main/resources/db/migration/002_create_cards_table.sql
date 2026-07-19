@@ -1,0 +1,12 @@
+CREATE TABLE IF NOT EXISTS cards (
+    id BIGSERIAL PRIMARY KEY,
+    encrypted_number VARCHAR(255) NOT NULL,
+    owner VARCHAR(255) NOT NULL,
+    expiry_date DATE NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    balance BIGINT DEFAULT 0,
+    user_id BIGINT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_cards_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );

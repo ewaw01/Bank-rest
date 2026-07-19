@@ -1,2 +1,18 @@
-# 
-# docker-compose.yml — определяет сервисы для разработки и тестирования.
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: bank_postgres
+    environment:
+      POSTGRES_DB: bank_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 2d8h38s
+    ports:
+      - "5446:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
