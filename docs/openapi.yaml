@@ -1,1 +1,707 @@
-# Здесь будет OpenAPI описание всех доступных эндпоинтов и моделей данных.
+openapi: 3.0.1
+info:
+  title: Bank REST API
+  description: |
+    REST API для управления банковскими картами с JWT-аутентификацией.
+    
+    ## Возможности
+    - Регистрация и логин (JWT)
+    - Управление картами (ADMIN)
+    - Запрос на блокировку карты (USER)
+    - Переводы между своими картами (USER)
+    - Шифрование и маскирование номеров карт
+    - Пагинация и фильтрация
+  version: 1.0.0
+  contact:
+    name: Vadim
+    url: https://github.com/ewaw01
+servers:
+  - url: http://localhost:8080
+    description: Локальный сервер
+
+tags:
+  - name: Auth
+    description: Аутентификация
+  - name: Users
+    description: Управление пользователями
+  - name: Cards
+    description: Управление картами
+  - name: Transfers
+    description: Переводы между картами
+
+paths:
+  /api/auth/register:
+    post:
+      tags:
+        - Auth
+      summary: Регистрация нового пользователя
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Успешная регистрация
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Successfully registered!"
+        '400':
+          description: Пользователь уже существует
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Логин, возвращает JWT-токен
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Успешный логин
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Successfully logged in!\nYour token: eyJhbGciOiJIUzM4NCJ9..."
+        '400':
+          description: Неверный email или пароль
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/bank/admin/user:
+    get:
+      tags:
+        - Users
+      summary: Получить всех пользователей (ADMIN)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: query
+          schema:
+            type: integer
+          description: ID пользователя (опционально)
+        - name: email
+          in: query
+          schema:
+            type: string
+          description: Email пользователя (опционально)
+        - name: username
+          in: query
+          schema:
+            type: string
+          description: Username пользователя (опционально)
+        - name: page_num
+          in: query
+          schema:
+            type: integer
+            default: 0
+          description: Номер страницы
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 5
+          description: Размер страницы
+      responses:
+        '200':
+          description: Список пользователей
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserResponse'
+        '403':
+          description: Недостаточно прав
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/bank/user/{id}:
+    delete:
+      tags:
+        - Users
+      summary: Удалить пользователя (USER может удалить только себя, ADMIN любого)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID пользователя
+      responses:
+        '200':
+          description: Пользователь удалён
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "User with id 1 was deleted."
+        '403':
+          description: Недостаточно прав
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/bank/user:
+    put:
+      tags:
+        - Users
+      summary: Обновить данные пользователя
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: Данные обновлены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '403':
+          description: Недостаточно прав
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/bank/admin/user/{id}/block:
+    put:
+      tags:
+        - Users
+      summary: Заблокировать пользователя (ADMIN)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID пользователя
+      responses:
+        '200':
+          description: Пользователь заблокирован
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "User with id 1 was blocked."
+        '403':
+          description: Недостаточно прав
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/bank/admin/card:
+    post:
+      tags:
+        - Cards
+      summary: Создать карту (ADMIN)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CardRequest'
+      responses:
+        '201':
+          description: Карта создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardResponse'
+        '403':
+          description: Недостаточно прав
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/bank/admin/card/{id}:
+    delete:
+      tags:
+        - Cards
+      summary: Удалить карту (ADMIN)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID карты
+      responses:
+        '200':
+          description: Карта удалена
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Card with id 1 was deleted."
+        '403':
+          description: Недостаточно прав
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Карта не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/bank/card/{id}/block-request:
+    put:
+      tags:
+        - Cards
+      summary: Запросить блокировку карты (USER)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID карты
+      responses:
+        '200':
+          description: Запрос на блокировку отправлен
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Successfully requested block."
+        '403':
+          description: Недостаточно прав
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Карта не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/bank/admin/card/{id}/block:
+    put:
+      tags:
+        - Cards
+      summary: Подтвердить блокировку карты (ADMIN)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID карты
+      responses:
+        '200':
+          description: Карта заблокирована
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Card with id 1 was blocked."
+        '403':
+          description: Недостаточно прав
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Карта не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/bank/admin/card/{id}/activate:
+    put:
+      tags:
+        - Cards
+      summary: Активировать карту (ADMIN)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID карты
+      responses:
+        '200':
+          description: Карта активирована
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Card with id 1 was activated."
+        '403':
+          description: Недостаточно прав
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Карта не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/bank/admin/card/balance:
+    put:
+      tags:
+        - Cards
+      summary: Обновить баланс карты (ADMIN)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBalanceRequest'
+      responses:
+        '200':
+          description: Баланс обновлён
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Balance for card 1 updated to 5000"
+        '403':
+          description: Недостаточно прав
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Карта не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/bank/user/card:
+    get:
+      tags:
+        - Cards
+      summary: Получить карты пользователя (USER — свои, ADMIN — любые)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: user_id
+          in: query
+          schema:
+            type: integer
+          description: ID пользователя (для ADMIN)
+        - name: id
+          in: query
+          schema:
+            type: integer
+          description: ID карты (опционально)
+        - name: number_card
+          in: query
+          schema:
+            type: string
+          description: Номер карты (фильтр)
+        - name: balance
+          in: query
+          schema:
+            type: integer
+          description: Баланс (фильтр)
+        - name: page_num
+          in: query
+          schema:
+            type: integer
+            default: 0
+          description: Номер страницы
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 5
+          description: Размер страницы
+      responses:
+        '200':
+          description: Список карт
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CardResponse'
+        '403':
+          description: Недостаточно прав
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/bank/card/transfer:
+    post:
+      tags:
+        - Transfers
+      summary: Перевод между своими картами (USER)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferRequest'
+      responses:
+        '200':
+          description: Перевод выполнен
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Transfer completed successfully"
+        '400':
+          description: Недостаточно средств, карта не активна или просрочена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Карты не принадлежат пользователю
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Карта не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+        - username
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@test.com
+        password:
+          type: string
+          format: password
+          example: 123456
+        username:
+          type: string
+          example: john
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@test.com
+        password:
+          type: string
+          format: password
+          example: 123456
+
+    UpdateUserRequest:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: integer
+          example: 1
+        email:
+          type: string
+          format: email
+          example: new@test.com
+        username:
+          type: string
+          example: new_username
+        isBlocked:
+          type: boolean
+          example: false
+
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        role:
+          type: string
+          enum: [ROLE_USER, ROLE_ADMIN]
+        username:
+          type: string
+        isBlocked:
+          type: boolean
+        cards:
+          type: array
+          items:
+            $ref: '#/components/schemas/CardResponse'
+
+    CardRequest:
+      type: object
+      required:
+        - ownerId
+        - expiryDate
+      properties:
+        ownerId:
+          type: integer
+          description: ID пользователя-владельца
+          example: 1
+        expiryDate:
+          type: string
+          format: date
+          example: 2028-12-31
+
+    UpdateBalanceRequest:
+      type: object
+      required:
+        - cardId
+        - newBalance
+      properties:
+        cardId:
+          type: integer
+          example: 1
+        newBalance:
+          type: integer
+          example: 5000
+
+    CardResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        maskedNumber:
+          type: string
+          example: "**** **** **** 1234"
+        owner:
+          type: string
+        expiryDate:
+          type: string
+          format: date
+        status:
+          type: string
+          enum: [ACTIVE, BLOCKED, EXPIRED, BLOCK_REQUESTED]
+        balance:
+          type: integer
+        userId:
+          type: integer
+
+    TransferRequest:
+      type: object
+      required:
+        - fromCardId
+        - toCardId
+        - amount
+      properties:
+        fromCardId:
+          type: integer
+          example: 1
+        toCardId:
+          type: integer
+          example: 2
+        amount:
+          type: integer
+          example: 500
+
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Bad request"
+        detailMessage:
+          type: string
+          example: "Insufficient balance"
+        time:
+          type: string
+          format: date-time
