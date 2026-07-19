@@ -163,12 +163,15 @@ public class CardService {
         cardRepository.save(toCard);
     }
 
-    /*
-    осталось проверить, правильно ли работают трансферы,
-    добавить, чтобы в проверке на expired, если истек, статус карты менялся на EXPIRED,
-    добавить, чтобы ADMIN мог обратно активировать карты,
-    решить, что делать с логикой блокировки пользователя,
-    Добавить: unit-тесты, миграции, docker-compose
-     */
+    @Transactional
+    public void updateCardBalance(Long cardId, Long newBalance) {
+        log.info("called method updateCardBalance");
+
+        CardEntity card = cardRepository.findById(cardId)
+                .orElseThrow(() -> new NoSuchElementException("Card with id " + cardId + " not found"));
+
+        card.setBalance(newBalance);
+         cardRepository.save(card);
+    }
 
 }

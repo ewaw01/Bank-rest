@@ -159,4 +159,14 @@ public class MainController {
         return ResponseEntity.ok().body("User with id " + id + " was blocked.");
     }
 
+    @PutMapping("/admin/card/balance")
+    public ResponseEntity<String> updateCardBalance(
+            @Valid @RequestBody UpdateCardBalanceRequestDto request
+    ) {
+        log.info("called method updateCardBalance");
+
+        cardService.updateCardBalance(request.cardId(), request.newBalance());
+        return ResponseEntity.ok().body("Balance for card " + request.cardId() + " updated to " + request.newBalance());
+    }
+
 }
