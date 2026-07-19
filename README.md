@@ -154,7 +154,7 @@ spring.liquibase.url=jdbc:postgresql://localhost:5446/bank_db
 spring.liquibase.user=postgres
 spring.liquibase.password=YOUR_DB_PASSWORD
 ```
-3. Не забудьте заменить YOUR_DB_PASSWORD, YOUR_JWT_SECRET, YOUR_CRYPT_PASSWORD, YOUR_CRYPT_SALT
+3. Не забудьте заменить YOUR_DB_PASSWORD (можете взять его из docker-compose, либо заменить на свой, но тогда придется его заменить и в compose и в properties), YOUR_JWT_SECRET, YOUR_CRYPT_PASSWORD, YOUR_CRYPT_SALT
 
 `jwt.secret` - JWT-секрет для security
 
