@@ -164,7 +164,10 @@ public class CardService {
     }
 
     @Transactional
-    public void updateCardBalance(Long cardId, Long newBalance) {
+    public void updateCardBalance(
+            Long cardId,
+            Long newBalance
+    ) {
         log.info("called method updateCardBalance");
 
         CardEntity card = cardRepository.findById(cardId)
